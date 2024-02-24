@@ -1,0 +1,612 @@
+Step 1: ng new angular-tour-of-heroes --no-standalone
+
+Open the app.component.ts
+title = 'Tour of Heroes';
+
+Open app.component.html
+<h1>{{title}}</h1>
+
+Open src/styles.css
+
+----------------------------------------
+Step 2: Create the heroes component
+
+ng generate component heroes
+
+heroes.component.ts (hero property)
+hero = 'Windstorm';
+
+heroes.component.html
+<h2>{{hero}}</h2>
+
+src/app/app.component.html
+<h1>{{title}}</h1>
+<app-heroes></app-heroes>
+
+----------------------------------------
+Step 3: Create a Hero interface
+
+src/app/hero.ts
+export interface Hero {
+  id: number;
+  name: string;
+}
+
+src/app/heroes/heroes.component.ts
+export class HeroesComponent {
+  hero: Hero = {
+    id: 1,
+    name: 'Windstorm'
+  };
+}
+
+------------------------------------
+Step 4: Show the hero object
+
+heroes.component.html (HeroesComponent template)
+<h2>{{hero.name}} Details</h2>
+<div><span>id: </span>{{hero.id}}</div>
+<div><span>name: </span>{{hero.name}}</div>
+
+Format with the UppercasePipe
+src/app/heroes/heroes.component.html
+<h2>{{hero.name | uppercase}} Details</h2>
+
+----------------------------------------
+Step 5: Two-way binding
+
+src/app/heroes/heroes.component.html (HeroesComponent's template)
+<div>
+  <label for="name">Hero name: </label>
+  <input id="name" [(ngModel)]="hero.name" placeholder="name">
+</div>
+
+app.module.ts (@NgModule imports)
+  imports: [
+    BrowserModule,
+    AppRoutingModule,
+    FormsModule
+  ],
+
+Step 6: Create a file called mock-heroes.ts in the src/app/ directory
+src/app/mock-heroes.ts
+content_copy
+import { Hero } from './hero';
+
+export const HEROES: Hero[] = [
+  { id: 12, name: 'Dr. Nice' },
+  { id: 13, name: 'Bombasto' },
+  { id: 14, name: 'Celeritas' },
+  { id: 15, name: 'Magneta' },
+  { id: 16, name: 'RubberMan' },
+  { id: 17, name: 'Dynama' },
+  { id: 18, name: 'Dr. IQ' },
+  { id: 19, name: 'Magma' },
+  { id: 20, name: 'Tornado' }
+];
+
+heroes.component.html (heroes template)
+<h2>My Heroes</h2>
+<ul class="heroes">
+  <li *ngFor="let hero of heroes">
+    <button type="button">
+      <span class="badge">{{hero.id}}</span>
+      <span class="name">{{hero.name}}</span>
+    </button>
+  </li>
+</ul>
+In HeroesComponent class, define a component property called heroes to expose the HEROES array for binding.
+src/app/heroes/heroes.component.ts
+export class HeroesComponent {
+  heroes = HEROES;
+}
+
+Step 7: Add a click event binding
+heroes.component.html (heroes template)
+<li *ngFor="let hero of heroes">
+  <button type="button" (click)="onSelect(hero)">
+Add the following onSelect() method, which assigns the clicked hero from the template to the component's selectedHero.
+src/app/heroes/heroes.component.ts (onSelect)
+selectedHero?: Hero;
+onSelect(hero: Hero): void {
+  this.selectedHero = hero;
+}
+
+Step 8: Make the HeroDetailComponent
+ng generate component hero-detail
+
+src/app/hero-detail/hero-detail.component.html
+<div *ngIf="selectedHero">
+    <h2>{{selectedHero.name | uppercase}} Details</h2>
+    <div>id: {{selectedHero.id}}</div>
+    <div>
+      <label for="hero-name">Hero name: </label>
+      <input id="hero-name" [(ngModel)]="selectedHero.name" placeholder="name">
+    </div>
+  </div>
+
+src/app/hero-detail/hero-detail.component.ts
+export class HeroDetailComponent {
+  @Input() hero?: Hero;
+}
+
+
+Add an <app-hero-detail> element near the bottom of the HeroesComponent template
+heroes.component.html (HeroDetail binding)
+<app-hero-detail [hero]="selectedHero"></app-hero-detail>
+---------------------------------------
+Step 9: Create the HeroService
+
+ng generate service hero
+
+Add a getHeroes method to return the mock heroes.
+src/app/hero.service.ts
+getHeroes(): Hero[] {
+  return HEROES;
+}
+
+Update HeroesComponent
+
+src/app/heroes/heroes.component.ts
+heroes: Hero[] = [];
+constructor(private heroService: HeroService) {}
+Create a method to retrieve the heroes from the service.
+getHeroes(): void {
+  this.heroes = this.heroService.getHeroes();
+}
+ngOnInit(): void {
+  this.getHeroes();
+}
+
+Observable HeroService
+src/app/hero.service.ts
+getHeroes(): Observable<Hero[]> {
+  const heroes = of(HEROES);
+  return heroes;
+}
+
+
+------------------------------------------------
+Step 10: Show messages
+
+Edit the AppComponent template to display the MessagesComponent.
+src/app/app.component.html
+<h1>{{title}}</h1>
+<app-heroes></app-heroes>
+<app-messages></app-messages>
+
+Create the MessageService
+ng generate service message
+
+src/app/message.service.ts
+export class MessageService {
+  messages: string[] = [];
+
+  add(message: string) {
+    this.messages.push(message);
+  }
+
+  clear() {
+    this.messages = [];
+  }
+}
+
+Inject it into the HeroService
+src/app/hero.service.ts 
+constructor(private messageService: MessageService) { }
+
+Send a message from HeroService
+src/app/hero.service.ts
+getHeroes(): Observable<Hero[]> {
+  const heroes = of(HEROES);
+  this.messageService.add('HeroService: fetched heroes');
+  return heroes;
+}
+
+Display the message from HeroService
+src/app/messages/messages.component.ts
+constructor(public messageService: MessageService) {}
+
+Bind to the MessageService
+src/app/messages/messages.component.html
+<div *ngIf="messageService.messages.length">
+
+  <h2>Messages</h2>
+  <button type="button" class="clear"
+          (click)="messageService.clear()">Clear messages</button>
+  <div *ngFor='let message of messageService.messages'> {{message}} </div>
+
+</div>
+
+Add MessageService to HeroesComponent
+src/app/heroes/heroes.component.ts
+export class HeroesComponent implements OnInit {
+  constructor(private heroService: HeroService, private messageService: MessageService) { }
+  onSelect(hero: Hero): void {
+    this.selectedHero = hero;
+    this.messageService.add(`HeroesComponent: Selected hero id=${hero.id}`);
+  }
+
+-------------------------------------------------------------
+Step 11: Add the AppRoutingModule
+ng generate module app-routing --flat --module=app
+src/app/app-routing.module.ts (updated)
+const routes: Routes = [
+  { path: 'heroes', component: HeroesComponent }
+];
+
+Add RouterOutlet
+src/app/app.component.html (router-outlet)
+<h1>{{title}}</h1>
+<router-outlet></router-outlet>
+<app-messages></app-messages>
+
+Add a navigation link using routerLink
+src/app/app.component.html (heroes RouterLink)
+<h1>{{title}}</h1>
+<nav>
+  <a routerLink="/heroes">Heroes</a>
+</nav>
+<router-outlet></router-outlet>
+<app-messages></app-messages>
+
+-----------------------------------------
+Step 12: Add a dashboard view
+ng generate component dashboard
+src/app/dashboard/dashboard.component.html
+<h2>Top Heroes</h2>
+<div class="heroes-menu">
+  <a *ngFor="let hero of heroes">
+    {{hero.name}}
+  </a>
+</div>
+
+src/app/dashboard/dashboard.component.ts
+  heroes: Hero[] = [];
+
+  constructor(private heroService: HeroService) { }
+
+  ngOnInit(): void {
+    this.getHeroes();
+  }
+
+  getHeroes(): void {
+    this.heroService.getHeroes()
+      .subscribe(heroes => this.heroes = heroes.slice(1, 5));
+  }
+
+Add the dashboard route
+src/app/app-routing.module.ts
+{ path: 'dashboard', component: DashboardComponent },
+
+Add a default route
+src/app/app-routing.module.ts
+{ path: '', redirectTo: '/dashboard', pathMatch: 'full' },
+
+Add dashboard link to the shell
+src/app/app.component.html
+<h1>{{title}}</h1>
+<nav>
+  <a routerLink="/dashboard">Dashboard</a>
+  <a routerLink="/heroes">Heroes</a>
+</nav>
+<router-outlet></router-outlet>
+<app-messages></app-messages>
+
+Add a hero detail route
+src/app/app-routing.module.ts
+{ path: 'detail/:id', component: HeroDetailComponent },
+
+DashboardComponent hero links
+src/app/dashboard/dashboard.component.html (hero links)
+<a *ngFor="let hero of heroes"
+  routerLink="/detail/{{hero.id}}">
+  {{hero.name}}
+</a>
+
+HeroesComponent hero links
+src/app/heroes/heroes.component.html (list with links)
+<ul class="heroes">
+  <li *ngFor="let hero of heroes">
+    <a routerLink="/detail/{{hero.id}}">
+      <span class="badge">{{hero.id}}</span> {{hero.name}}
+    </a>
+  </li>
+</ul>
+
+Remove dead code - optional
+src/app/heroes/heroes.component.ts (cleaned up)
+content_copy
+export class HeroesComponent implements OnInit {
+  heroes: Hero[] = [];
+
+  constructor(private heroService: HeroService) { }
+
+  ngOnInit(): void {
+    this.getHeroes();
+  }
+
+  getHeroes(): void {
+    this.heroService.getHeroes()
+    .subscribe(heroes => this.heroes = heroes);
+  }
+}
+
+-------------------------------------------------
+Step 13: Routable HeroDetailComponent
+*** them url va hinh thi thong tin cua 1 hero detail
+src/app/hero-detail/hero-detail.component.ts
+constructor(
+  private route: ActivatedRoute,
+  private heroService: HeroService,
+  private location: Location
+) {}
+
+Extract the id route parameter
+src/app/hero-detail/hero-detail.component.ts
+ngOnInit(): void {
+  this.getHero();
+}
+
+getHero(): void {
+  const id = Number(this.route.snapshot.paramMap.get('id'));
+  this.heroService.getHero(id)
+    .subscribe(hero => this.hero = hero);
+}
+
+Add HeroService.getHero()
+src/app/hero.service.ts (getHero)
+getHero(id: number): Observable<Hero> {
+  // For now, assume that a hero with the specified `id` always exists.
+  // Error handling will be added in the next step of the tutorial.
+  const hero = HEROES.find(h => h.id === id)!;
+  this.messageService.add(`HeroService: fetched hero id=${id}`);
+  return of(hero);
+}
+
+Find the way back
+src/app/hero-detail/hero-detail.component.html (back button)
+<button type="button" (click)="goBack()">go back</button>
+
+src/app/hero-detail/hero-detail.component.ts (goBack)
+content_copy
+goBack(): void {
+  this.location.back();
+}
+
+-----------------------------------------------------
+Step 14:Get data from a server
+*** tao 1 server ao va cau hinh no
+Enable HTTP services
+src/app/app.module.ts (imports array excerpt)
+@NgModule({
+  imports: [
+    HttpClientModule,
+  ],
+})
+
+Simulate a data server
+Install the In-memory Web API package 
+npm install angular-in-memory-web-api --save
+
+Generate the class src/app/in-memory-data.service.ts
+ng generate service InMemoryData
+src/app/in-memory-data.service.ts
+export class InMemoryDataService implements InMemoryDbService {
+  createDb() {
+    const heroes = [
+      { id: 12, name: 'Dr. Nice' },
+      { id: 13, name: 'Bombasto' },
+      { id: 14, name: 'Celeritas' },
+      { id: 15, name: 'Magneta' },
+      { id: 16, name: 'RubberMan' },
+      { id: 17, name: 'Dynama' },
+      { id: 18, name: 'Dr. IQ' },
+      { id: 19, name: 'Magma' },
+      { id: 20, name: 'Tornado' }
+    ];
+    return {heroes};
+  }
+
+  // Overrides the genId method to ensure that a hero always has an id.
+  // If the heroes array is empty,
+  // the method below returns the initial number (11).
+  // if the heroes array is not empty, the method below returns the highest
+  // hero id + 1.
+  genId(heroes: Hero[]): number {
+    return heroes.length > 0 ? Math.max(...heroes.map(hero => hero.id)) + 1 : 11;
+  }
+}
+
+src/app/app.module.ts (imports array excerpt)
+HttpClientModule,
+// The HttpClientInMemoryWebApiModule module intercepts HTTP requests
+// and returns simulated server responses.
+// Remove it when a real server is ready to receive requests.
+HttpClientInMemoryWebApiModule.forRoot(
+  InMemoryDataService, { dataEncapsulation: false }
+)
+
+-----------------------------------------------------
+Step 15: Heroes and HTTP
+*** Xay dung ham xu ly loi khi khong nhan duoc data tu server
+src/app/hero.service.ts
+constructor(
+  private http: HttpClient,
+  private messageService: MessageService) { }
+
+src/app/hero.service.ts
+/** Log a HeroService message with the MessageService */
+private log(message: string) {
+  this.messageService.add(`HeroService: ${message}`);
+}
+
+src/app/hero.service.ts
+private heroesUrl = 'api/heroes';  // URL to web api
+
+Get heroes with HttpClient
+src/app/hero.service.ts
+/** GET heroes from the server */
+getHeroes(): Observable<Hero[]> {
+  return this.http.get<Hero[]>(this.heroesUrl)
+}
+
+HttpClient methods return one value
+In general, an observable can return more than one value over time. An observable from HttpClient always emits a single value and then completes, never to emit again.
+HttpClient.get() returns response data
+HttpClient.get() returns the body of the response as an untyped JSON object by default. 
+
+Error handling
+src/app/hero.service.ts
+getHeroes(): Observable<Hero[]> {
+  return this.http.get<Hero[]>(this.heroesUrl)
+    .pipe(
+      catchError(this.handleError<Hero[]>('getHeroes', []))
+    );
+}
+/**
+ * Handle Http operation that failed.
+ * Let the app continue.
+ *
+ * @param operation - name of the operation that failed
+ * @param result - optional value to return as the observable result
+ */
+private handleError<T>(operation = 'operation', result?: T) {
+  return (error: any): Observable<T> => {
+
+    // TODO: send the error to remote logging infrastructure
+    console.error(error); // log to console instead
+
+    // TODO: better job of transforming error for user consumption
+    this.log(`${operation} failed: ${error.message}`);
+
+    // Let the app keep running by returning an empty result.
+    return of(result as T);
+  };
+}
+
+Tap into the Observable
+src/app/hero.service.ts
+/** GET heroes from the server */
+getHeroes(): Observable<Hero[]> {
+  return this.http.get<Hero[]>(this.heroesUrl)
+    .pipe(
+      tap(_ => this.log('fetched heroes')),
+      catchError(this.handleError<Hero[]>('getHeroes', []))
+    );
+}
+
+Get hero by id
+src/app/hero.service.ts
+/** GET hero by id. Will 404 if id not found */
+getHero(id: number): Observable<Hero> {
+  const url = `${this.heroesUrl}/${id}`;
+  return this.http.get<Hero>(url).pipe(
+    tap(_ => this.log(`fetched hero id=${id}`)),
+    catchError(this.handleError<Hero>(`getHero id=${id}`))
+  );
+}
+
+----------------------------------------------------------------
+Step 16: Edit Heroes
+Update heroes
+At the end of the hero detail template, add a save button with a click event binding
+src/app/hero-detail/hero-detail.component.html (save)
+<button type="button" (click)="save()">save</button>
+
+add the following save() method persists hero name changes using the hero service updateHero() method and then navigates back to the previous view.
+src/app/hero-detail/hero-detail.component.ts (save)
+save(): void {
+  if (this.hero) {
+    this.heroService.updateHero(this.hero)
+      .subscribe(() => this.goBack());
+  }
+}
+
+Add HeroService.updateHero()
+src/app/hero.service.ts (update)
+/** PUT: update the hero on the server */
+updateHero(hero: Hero): Observable<any> {
+  return this.http.put(this.heroesUrl, hero, this.httpOptions).pipe(
+    tap(_ => this.log(`updated hero id=${hero.id}`)),
+    catchError(this.handleError<any>('updateHero'))
+  );
+}
+
+Add a new hero
+src/app/heroes/heroes.component.html (add)
+<div>
+  <label for="new-hero">Hero name: </label>
+  <input id="new-hero" #heroName />
+
+  <!-- (click) passes input value to add() and then clears the input -->
+  <button type="button" class="add-button" (click)="add(heroName.value); heroName.value=''">
+    Add hero
+  </button>
+</div>
+
+src/app/heroes/heroes.component.ts (add)
+add(name: string): void {
+  name = name.trim();
+  if (!name) { return; }
+  this.heroService.addHero({ name } as Hero)
+    .subscribe(hero => {
+      this.heroes.push(hero);
+    });
+}
+
+src/app/hero.service.ts (addHero)
+content_copy
+/** POST: add a new hero to the server */
+addHero(hero: Hero): Observable<Hero> {
+  return this.http.post<Hero>(this.heroesUrl, hero, this.httpOptions).pipe(
+    tap((newHero: Hero) => this.log(`added hero w/ id=${newHero.id}`)),
+    catchError(this.handleError<Hero>('addHero'))
+  );
+}
+
+Delete a hero
+Add the following button element to the HeroesComponent template, after the hero name in the repeated <li> element.
+src/app/heroes/heroes.component.html
+<button type="button" class="delete" title="delete hero"
+  (click)="delete(hero)">x</button>
+
+heroes.component.css.
+
+Add the delete() handler to the component class.
+
+src/app/heroes/heroes.component.ts (delete)
+delete(hero: Hero): void {
+  this.heroes = this.heroes.filter(h => h !== hero);
+  this.heroService.deleteHero(hero.id).subscribe();
+}
+
+src/app/hero.service.ts (delete)
+/** DELETE: delete the hero from the server */
+deleteHero(id: number): Observable<Hero> {
+  const url = `${this.heroesUrl}/${id}`;
+
+  return this.http.delete<Hero>(url, this.httpOptions).pipe(
+    tap(_ => this.log(`deleted hero id=${id}`)),
+    catchError(this.handleError<Hero>('deleteHero'))
+  );
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
