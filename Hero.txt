@@ -592,17 +592,82 @@ deleteHero(id: number): Observable<Hero> {
   );
 }
 
+--------------------------------------------------------------------
+Step 17: Search by name
+src/app/hero.service.ts
+/* GET heroes whose name contains search term */
+searchHeroes(term: string): Observable<Hero[]> {
+  if (!term.trim()) {
+    // if not search term, return empty hero array.
+    return of([]);
+  }
+  return this.http.get<Hero[]>(`${this.heroesUrl}/?name=${term}`).pipe(
+    tap(x => x.length ?
+       this.log(`found heroes matching "${term}"`) :
+       this.log(`no heroes matching "${term}"`)),
+    catchError(this.handleError<Hero[]>('searchHeroes', []))
+  );
+}
 
+src/app/dashboard/dashboard.component.html
+<h2>Top Heroes</h2>
+<div class="heroes-menu">
+  <a *ngFor="let hero of heroes"
+      routerLink="/detail/{{hero.id}}">
+      {{hero.name}}
+  </a>
+</div>
+<app-hero-search></app-hero-search>
 
+Create HeroSearchComponent
+ng generate component hero-search
+src/app/hero-search/hero-search.component.html
+<div id="search-component">
+  <label for="search-box">Hero Search</label>
+  <input #searchBox id="search-box" (input)="search(searchBox.value)" />
 
+  <ul class="search-result">
+    <li *ngFor="let hero of heroes$ | async" >
+      <a routerLink="/detail/{{hero.id}}">
+        {{hero.name}}
+      </a>
+    </li>
+  </ul>
+</div>
 
+heroes$ :The $ is a convention that indicates heroes$ is an Observable, not an array.
+AsyncPipe
+This identifies Angular's AsyncPipe and subscribes to an Observable automatically 
 
+Edit the HeroSearchComponent class
+src/app/hero-search/hero-search.component.ts
+export class HeroSearchComponent implements OnInit {
+  heroes$!: Observable<Hero[]>;
+  private searchTerms = new Subject<string>();
 
+  constructor(private heroService: HeroService) {}
 
+  // Push a search term into the observable stream.
+  search(term: string): void {
+    this.searchTerms.next(term);
+  }
 
+  ngOnInit(): void {
+    this.heroes$ = this.searchTerms.pipe(
+      // wait 300ms after each keystroke before considering the term
+      debounceTime(300),
 
+      // ignore new term if same as previous term
+      distinctUntilChanged(),
 
+      // switch to new search observable each time the term changes
+      switchMap((term: string) => this.heroService.searchHeroes(term)),
+    );
+  }
+}
 
+The searchTerms RxJS subject
+Instead, the ngOnInit() method pipes the searchTerms observable through a sequence of RxJS operators that reduce the number of calls to the searchHeroes(). Ultimately, this returns an observable of timely hero search results where each one is a Hero[].
 
 
 
